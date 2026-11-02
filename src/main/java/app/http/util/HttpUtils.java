@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public final class HttpUtils {
     private static final ObjectMapper MAPPER = JsonMapper.builder().build();
@@ -34,8 +35,36 @@ public final class HttpUtils {
         if (bytes.length == 0) {
             throw new ValidationException("Request body must not be empty");
         }
+        String text = new String(bytes, StandardCharsets.UTF_8).trim();
+        if (text.isEmpty()) {
+            throw new ValidationException("Request body must not be empty");
+        }
+        if (text.equals("null")) {
+            throw new ValidationException("Request body must not be null");
+        }
         try {
-            return MAPPER.readValue(bytes, clazz);
+            T value = MAPPER.readValue(bytes, clazz);
+            if (value == null) {
+                throw new ValidationException("Request body must not be null");
+            }
+            return value;
+        } catch (JacksonException ex) {
+            throw new ValidationException("Malformed JSON request body: " + ex.getOriginalMessage());
+        }
+    }
+
+    public static <T> Optional<T> readOptionalJson(HttpExchange exchange, Class<T> clazz) throws IOException {
+        byte[] bytes = readRequestBody(exchange);
+        if (bytes.length == 0) {
+            return Optional.empty();
+        }
+        String text = new String(bytes, StandardCharsets.UTF_8).trim();
+        if (text.isEmpty() || text.equals("null")) {
+            return Optional.empty();
+        }
+        try {
+            T value = MAPPER.readValue(bytes, clazz);
+            return Optional.ofNullable(value);
         } catch (JacksonException ex) {
             throw new ValidationException("Malformed JSON request body: " + ex.getOriginalMessage());
         }

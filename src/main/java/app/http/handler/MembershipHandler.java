@@ -95,7 +95,7 @@ public class MembershipHandler implements HttpHandler {
             case "GET" -> HttpUtils.sendJson(exchange, 200, MembershipResponse.fromDomain(membershipService.getMembership(id)));
             case "PUT" -> {
                 MembershipRequest req = HttpUtils.readJson(exchange, MembershipRequest.class);
-                Membership m = membershipService.updateMembership(id, req.startDate(), req.price());
+                Membership m = membershipService.updateMembership(id, req.endDate(), req.price());
                 HttpUtils.sendJson(exchange, 200, MembershipResponse.fromDomain(m));
             }
             case "DELETE" -> {
@@ -122,12 +122,8 @@ public class MembershipHandler implements HttpHandler {
             HttpUtils.sendMethodNotAllowed(exchange, "POST");
             return;
         }
-        byte[] body = HttpUtils.readRequestBody(exchange);
-        LocalDate date = LocalDate.now();
-        if (body.length > 0) {
-            FreezeRequest req = HttpUtils.getMapper().readValue(body, FreezeRequest.class);
-            if (req.requestDate() != null) date = req.requestDate();
-        }
+        FreezeRequest req = HttpUtils.readOptionalJson(exchange, FreezeRequest.class).orElse(null);
+        LocalDate date = (req != null && req.requestDate() != null) ? req.requestDate() : LocalDate.now();
         HttpUtils.sendJson(exchange, 200, MembershipResponse.fromDomain(gymOperationService.unfreezeMembership(id, date)));
     }
 
@@ -136,14 +132,9 @@ public class MembershipHandler implements HttpHandler {
             HttpUtils.sendMethodNotAllowed(exchange, "POST");
             return;
         }
-        byte[] body = HttpUtils.readRequestBody(exchange);
-        LocalDateTime time = LocalDateTime.now();
-        String locker = null;
-        if (body.length > 0) {
-            CheckInRequest req = HttpUtils.getMapper().readValue(body, CheckInRequest.class);
-            if (req.visitTime() != null) time = req.visitTime();
-            locker = req.preferredLocker();
-        }
+        CheckInRequest req = HttpUtils.readOptionalJson(exchange, CheckInRequest.class).orElse(null);
+        LocalDateTime time = (req != null && req.visitTime() != null) ? req.visitTime() : LocalDateTime.now();
+        String locker = req != null ? req.preferredLocker() : null;
         Visit visit = gymOperationService.checkIn(id, time, locker);
         exchange.getResponseHeaders().set("Location", "/api/visits/" + visit.getId());
         HttpUtils.sendJson(exchange, 201, VisitResponse.fromDomain(visit));

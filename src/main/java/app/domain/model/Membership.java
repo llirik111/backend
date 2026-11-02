@@ -17,6 +17,7 @@ public abstract class Membership {
     protected LocalDate startDate;
     protected LocalDate endDate;
     protected int frozenDays;
+    protected int plannedFreezeDays;
     protected LocalDate freezeStartDate;
     protected BigDecimal price;
     protected Instant createdAt;
@@ -35,6 +36,7 @@ public abstract class Membership {
         this.startDate = startDate;
         this.endDate = endDate;
         this.frozenDays = Math.max(0, frozenDays);
+        this.plannedFreezeDays = 0;
         this.freezeStartDate = freezeStartDate;
         this.price = price != null ? price : BigDecimal.ZERO;
         this.createdAt = createdAt != null ? createdAt : Instant.now();
@@ -51,12 +53,16 @@ public abstract class Membership {
         if (this.status == MembershipStatus.CANCELLED || this.status == MembershipStatus.EXPIRED) {
             throw new ConflictException("Cannot modify cancelled or expired membership");
         }
+        if (newEndDate != null && newEndDate.isBefore(this.startDate)) {
+            throw new ValidationException("End date cannot be before start date");
+        }
+        if (newPrice != null && newPrice.compareTo(BigDecimal.ZERO) < 0) {
+            throw new ValidationException("Price cannot be negative");
+        }
         if (newEndDate != null) {
-            if (newEndDate.isBefore(this.startDate)) throw new ValidationException("End date cannot be before start date");
             this.endDate = newEndDate;
         }
         if (newPrice != null) {
-            if (newPrice.compareTo(BigDecimal.ZERO) < 0) throw new ValidationException("Price cannot be negative");
             this.price = newPrice;
         }
     }
@@ -75,6 +81,7 @@ public abstract class Membership {
     public LocalDate getStartDate() { return startDate; }
     public LocalDate getEndDate() { return endDate; }
     public int getFrozenDays() { return frozenDays; }
+    public int getPlannedFreezeDays() { return plannedFreezeDays; }
     public LocalDate getFreezeStartDate() { return freezeStartDate; }
     public BigDecimal getPrice() { return price; }
     public Instant getCreatedAt() { return createdAt; }

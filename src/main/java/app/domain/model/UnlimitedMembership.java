@@ -51,17 +51,22 @@ public class UnlimitedMembership extends Membership {
         }
         this.status = MembershipStatus.FROZEN;
         this.freezeStartDate = requestDate;
-        this.frozenDays += days;
+        this.plannedFreezeDays = days;
     }
 
     @Override
     public void unfreeze(LocalDate requestDate) {
         if (status != MembershipStatus.FROZEN) throw new ConflictException("Membership is not currently frozen");
+        if (requestDate.isBefore(freezeStartDate)) {
+            throw new ValidationException("Unfreeze date cannot be before freeze start date");
+        }
         long daysDiff = ChronoUnit.DAYS.between(freezeStartDate, requestDate);
-        long daysToExtend = Math.max(1, daysDiff);
+        long daysToExtend = Math.min(this.plannedFreezeDays, Math.max(1, daysDiff));
+        this.frozenDays += (int) daysToExtend;
         this.endDate = this.endDate.plusDays(daysToExtend);
         this.status = MembershipStatus.ACTIVE;
         this.freezeStartDate = null;
+        this.plannedFreezeDays = 0;
     }
 
     @Override

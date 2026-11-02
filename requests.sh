@@ -40,6 +40,11 @@ curl -i -X POST "${BASE_URL}/api/clients" \
   -d '{"fullName":"Duplicate Phone","phone":"+79991112233","email":"other@example.com","birthDate":"1990-01-01"}'
 echo ""
 
+curl -i -X POST "${BASE_URL}/api/clients" \
+  -H "Content-Type: application/json" \
+  -d 'null'
+echo ""
+
 echo "=== 4. Get and filter clients (GET /api/clients) ==="
 curl -i -X GET "${BASE_URL}/api/clients"
 echo ""
@@ -57,6 +62,14 @@ echo "=== 5. Update, block, unblock and delete client ==="
 curl -i -X PUT "${BASE_URL}/api/clients/1" \
   -H "Content-Type: application/json" \
   -d '{"fullName":"Ivan Ivanov Updated","phone":"+79991112233","email":"ivan_new@example.com","birthDate":"1995-05-15"}'
+echo ""
+
+curl -i -X PUT "${BASE_URL}/api/clients/1" \
+  -H "Content-Type: application/json" \
+  -d '{"fullName":"Should Not Change","phone":"+79991112233","email":"bad-email","birthDate":"1995-05-15"}'
+echo ""
+
+curl -i -X GET "${BASE_URL}/api/clients/1"
 echo ""
 
 curl -i -X POST "${BASE_URL}/api/clients/3/block"
@@ -87,7 +100,7 @@ curl -i -X POST "${BASE_URL}/api/memberships" \
   -d '{"clientId":1,"type":"DAYTIME","startDate":"2026-10-01","durationDays":30,"price":3000.00}'
 echo ""
 
-echo "=== 7. Membership validation errors ==="
+echo "=== 7. Membership validation errors and atomic updates ==="
 curl -i -X POST "${BASE_URL}/api/memberships" \
   -H "Content-Type: application/json" \
   -d '{"clientId":2,"type":"VISIT_BASED","startDate":"2026-10-01","durationDays":30,"price":1000.00}'
@@ -101,6 +114,22 @@ echo ""
 curl -i -X POST "${BASE_URL}/api/memberships" \
   -H "Content-Type: application/json" \
   -d '{"clientId":1,"type":"UNLIMITED","startDate":"2026-10-01","durationDays":30,"price":-500.00}'
+echo ""
+
+curl -i -X PUT "${BASE_URL}/api/memberships/1" \
+  -H "Content-Type: application/json" \
+  -d '{"endDate":"2026-12-31","price":-200.00}'
+echo ""
+
+curl -i -X GET "${BASE_URL}/api/memberships/1"
+echo ""
+
+curl -i -X PUT "${BASE_URL}/api/memberships/1" \
+  -H "Content-Type: application/json" \
+  -d '{"endDate":"2026-12-15","price":5200.00}'
+echo ""
+
+curl -i -X GET "${BASE_URL}/api/memberships/1"
 echo ""
 
 echo "=== 8. Get and filter memberships (GET /api/memberships) ==="
@@ -147,7 +176,17 @@ curl -i -X POST "${BASE_URL}/api/memberships/1/unfreeze" \
   -d '{"requestDate":"2026-10-26"}'
 echo ""
 
-echo "=== 10. Domain operation: Check-in, Visits, and Lockers ==="
+echo "=== 10. Domain operation: Check-in, Visits, and Locker Validation ==="
+curl -i -X POST "${BASE_URL}/api/memberships/1/check-in" \
+  -H "Content-Type: application/json" \
+  -d '{"preferredLocker":"L-999"}'
+echo ""
+
+curl -i -X POST "${BASE_URL}/api/memberships/1/check-in" \
+  -H "Content-Type: application/json" \
+  -d '{"preferredLocker":"abc"}'
+echo ""
+
 curl -i -X POST "${BASE_URL}/api/memberships/1/check-in" \
   -H "Content-Type: application/json" \
   -d '{"preferredLocker":"L-101"}'
@@ -232,6 +271,11 @@ echo ""
 curl -i -X POST "${BASE_URL}/api/clients" \
   -H "Content-Type: application/json" \
   -d '{"fullName": "Broken Json'
+echo ""
+
+curl -i -X POST "${BASE_URL}/api/memberships/1/check-in" \
+  -H "Content-Type: application/json" \
+  -d 'Broken Json'
 echo ""
 
 curl -i -X GET "${BASE_URL}/api/non-existent-route"

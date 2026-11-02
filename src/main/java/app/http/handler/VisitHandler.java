@@ -74,12 +74,8 @@ public class VisitHandler implements HttpHandler {
             HttpUtils.sendMethodNotAllowed(exchange, "POST");
             return;
         }
-        byte[] body = HttpUtils.readRequestBody(exchange);
-        LocalDateTime exitTime = LocalDateTime.now();
-        if (body.length > 0) {
-            CheckOutRequest req = HttpUtils.getMapper().readValue(body, CheckOutRequest.class);
-            if (req.exitTime() != null) exitTime = req.exitTime();
-        }
+        CheckOutRequest req = HttpUtils.readOptionalJson(exchange, CheckOutRequest.class).orElse(null);
+        LocalDateTime exitTime = (req != null && req.exitTime() != null) ? req.exitTime() : LocalDateTime.now();
         Visit visit = gymOperationService.checkOut(id, exitTime);
         HttpUtils.sendJson(exchange, 200, VisitResponse.fromDomain(visit));
     }

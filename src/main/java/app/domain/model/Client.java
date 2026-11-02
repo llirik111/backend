@@ -33,10 +33,14 @@ public class Client {
     }
 
     public void update(String fullName, String phone, String email, LocalDate birthDate) {
-        this.fullName = validateFullName(fullName);
-        this.phone = validatePhone(phone);
-        this.email = validateEmail(email);
-        this.birthDate = validateBirthDate(birthDate);
+        String validName = validateFullName(fullName);
+        String validPhone = validatePhone(phone);
+        String validEmail = validateEmail(email);
+        LocalDate validBirth = validateBirthDate(birthDate);
+        this.fullName = validName;
+        this.phone = validPhone;
+        this.email = validEmail;
+        this.birthDate = validBirth;
         this.updatedAt = Instant.now();
     }
 

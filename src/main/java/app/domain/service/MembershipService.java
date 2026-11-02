@@ -1,5 +1,6 @@
 package app.domain.service;
 
+import app.domain.DomainLock;
 import app.domain.exception.BusinessRuleException;
 import app.domain.exception.ConflictException;
 import app.domain.exception.NotFoundException;
@@ -31,22 +32,24 @@ public class MembershipService {
     }
 
     public Membership createMembership(Long clientId, MembershipType type, LocalDate startDate, int durationDays, Integer totalVisits, BigDecimal price) {
-        Client client = clientService.getClient(clientId);
-        if (client.getStatus() == ClientStatus.BLOCKED) {
-            throw new BusinessRuleException("Cannot issue membership to a blocked client");
-        }
-        if (type == null) throw new ValidationException("Membership type must not be null");
-        Membership membership = switch (type) {
-            case UNLIMITED -> UnlimitedMembership.create(clientId, startDate, durationDays, price);
-            case VISIT_BASED -> {
-                if (totalVisits == null || totalVisits <= 0) {
-                    throw new ValidationException("Total visits must be specified and positive for visit-based membership");
-                }
-                yield VisitBasedMembership.create(clientId, startDate, durationDays, totalVisits, price);
+        synchronized (DomainLock.INSTANCE) {
+            Client client = clientService.getClient(clientId);
+            if (client.getStatus() == ClientStatus.BLOCKED) {
+                throw new BusinessRuleException("Cannot issue membership to a blocked client");
             }
-            case DAYTIME -> DaytimeMembership.create(clientId, startDate, durationDays, price);
-        };
-        return membershipRepository.save(membership);
+            if (type == null) throw new ValidationException("Membership type must not be null");
+            Membership membership = switch (type) {
+                case UNLIMITED -> UnlimitedMembership.create(clientId, startDate, durationDays, price);
+                case VISIT_BASED -> {
+                    if (totalVisits == null || totalVisits <= 0) {
+                        throw new ValidationException("Total visits must be specified and positive for visit-based membership");
+                    }
+                    yield VisitBasedMembership.create(clientId, startDate, durationDays, totalVisits, price);
+                }
+                case DAYTIME -> DaytimeMembership.create(clientId, startDate, durationDays, price);
+            };
+            return membershipRepository.save(membership);
+        }
     }
 
     public Membership getMembership(Long id) {
@@ -55,26 +58,32 @@ public class MembershipService {
     }
 
     public Membership updateMembership(Long id, LocalDate endDate, BigDecimal price) {
-        Membership membership = getMembership(id);
-        membership.update(endDate, price);
-        return membershipRepository.save(membership);
+        synchronized (DomainLock.INSTANCE) {
+            Membership membership = getMembership(id);
+            membership.update(endDate, price);
+            return membershipRepository.save(membership);
+        }
     }
 
     public void deleteMembership(Long id) {
-        if (!membershipRepository.existsById(id)) throw new NotFoundException("Membership not found with id: " + id);
-        if (visitRepository.existsActiveByMembershipId(id)) {
-            throw new ConflictException("Cannot delete membership while client is using it inside the gym");
+        synchronized (DomainLock.INSTANCE) {
+            if (!membershipRepository.existsById(id)) throw new NotFoundException("Membership not found with id: " + id);
+            if (visitRepository.existsActiveByMembershipId(id)) {
+                throw new ConflictException("Cannot delete membership while client is using it inside the gym");
+            }
+            membershipRepository.deleteById(id);
         }
-        membershipRepository.deleteById(id);
     }
 
     public Membership cancelMembership(Long id) {
-        Membership membership = getMembership(id);
-        if (visitRepository.existsActiveByMembershipId(id)) {
-            throw new ConflictException("Cannot cancel membership while a visit is in progress");
+        synchronized (DomainLock.INSTANCE) {
+            Membership membership = getMembership(id);
+            if (visitRepository.existsActiveByMembershipId(id)) {
+                throw new ConflictException("Cannot cancel membership while a visit is in progress");
+            }
+            membership.cancel();
+            return membershipRepository.save(membership);
         }
-        membership.cancel();
-        return membershipRepository.save(membership);
     }
 
     public List<Membership> listMemberships(Long clientId, MembershipType type, MembershipStatus status) {
