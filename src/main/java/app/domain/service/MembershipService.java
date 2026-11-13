@@ -15,11 +15,13 @@ import app.domain.model.UnlimitedMembership;
 import app.domain.model.VisitBasedMembership;
 import app.domain.repository.MembershipRepository;
 import app.domain.repository.VisitRepository;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+@Service
 public class MembershipService {
     private final MembershipRepository membershipRepository;
     private final VisitRepository visitRepository;

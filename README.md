@@ -51,14 +51,14 @@
 
 ## Запуск проекта
 
-1. Сборка:
+1. Запуск тестов:
 ```bash
-mvn clean compile
+mvn test
 ```
 
 2. Запуск сервиса:
 ```bash
-mvn exec:java
+mvn spring-boot:run
 ```
 
 3. Запуск тестов curl:
