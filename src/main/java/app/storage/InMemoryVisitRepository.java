@@ -3,6 +3,7 @@ package app.storage;
 import app.domain.model.Visit;
 import app.domain.model.VisitStatus;
 import app.domain.repository.VisitRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+@Repository
 public class InMemoryVisitRepository implements VisitRepository {
     private final Map<Long, Visit> visits = new ConcurrentHashMap<>();
     private final AtomicLong idSequence = new AtomicLong(1);

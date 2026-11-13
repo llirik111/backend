@@ -3,6 +3,7 @@ package app.storage;
 import app.domain.model.Client;
 import app.domain.model.ClientStatus;
 import app.domain.repository.ClientRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+@Repository
 public class InMemoryClientRepository implements ClientRepository {
     private final Map<Long, Client> clients = new ConcurrentHashMap<>();
     private final AtomicLong idSequence = new AtomicLong(1);

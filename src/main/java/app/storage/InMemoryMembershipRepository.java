@@ -4,6 +4,7 @@ import app.domain.model.Membership;
 import app.domain.model.MembershipStatus;
 import app.domain.model.MembershipType;
 import app.domain.repository.MembershipRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+@Repository
 public class InMemoryMembershipRepository implements MembershipRepository {
     private final Map<Long, Membership> memberships = new ConcurrentHashMap<>();
     private final AtomicLong idSequence = new AtomicLong(1);

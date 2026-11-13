@@ -8,10 +8,12 @@ import app.domain.model.ClientStatus;
 import app.domain.repository.ClientRepository;
 import app.domain.repository.MembershipRepository;
 import app.domain.repository.VisitRepository;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
 
+@Service
 public class ClientService {
     private final ClientRepository clientRepository;
     private final MembershipRepository membershipRepository;
