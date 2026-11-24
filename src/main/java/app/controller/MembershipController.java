@@ -69,6 +69,11 @@ public class MembershipController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{id}/transfer")
+    public MembershipResponse transfer(@PathVariable Long id, @RequestParam Long targetClientId) {
+        return MembershipResponse.fromDomain(membershipService.transferMembership(id, targetClientId));
+    }
+
     @PostMapping("/{id}/freeze")
     public MembershipResponse freeze(@PathVariable Long id, @RequestBody(required = false) FreezeRequest req) {
         int days = (req != null && req.days() != null) ? req.days() : 7;

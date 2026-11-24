@@ -35,9 +35,9 @@ public class ClientServiceTest {
 
     @BeforeEach
     void setUp() {
-        clientRepository = new InMemoryClientRepository();
-        membershipRepository = new InMemoryMembershipRepository();
-        visitRepository = new InMemoryVisitRepository();
+        clientRepository = InMemoryClientRepository.create();
+        membershipRepository = InMemoryMembershipRepository.create();
+        visitRepository = InMemoryVisitRepository.create();
         clientService = new ClientService(clientRepository, membershipRepository, visitRepository);
     }
 

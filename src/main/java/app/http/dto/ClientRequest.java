@@ -6,5 +6,10 @@ public record ClientRequest(
         String fullName,
         String phone,
         String email,
-        LocalDate birthDate
-) {}
+        LocalDate birthDate,
+        String preferredLocker
+) {
+    public ClientRequest(String fullName, String phone, String email, LocalDate birthDate) {
+        this(fullName, phone, email, birthDate, null);
+    }
+}

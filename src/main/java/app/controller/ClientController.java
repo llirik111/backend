@@ -6,6 +6,7 @@ import app.domain.model.ClientStatus;
 import app.domain.service.ClientService;
 import app.http.dto.ClientRequest;
 import app.http.dto.ClientResponse;
+import app.http.dto.ClientWithMembershipsResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/clients")
@@ -34,10 +36,25 @@ public class ClientController {
         return clientService.listClients(query, status).stream().map(ClientResponse::fromDomain).toList();
     }
 
+    @GetMapping("/with-memberships")
+    public List<ClientWithMembershipsResponse> listWithMemberships() {
+        return clientService.listClientsWithMemberships().stream()
+                .map(ClientWithMembershipsResponse::fromDomain)
+                .toList();
+    }
+
+    @PostMapping("/seed")
+    public ResponseEntity<Map<String, Object>> seed(
+            @RequestParam(defaultValue = "50") int clients,
+            @RequestParam(defaultValue = "2") int membershipsPerClient) {
+        int count = clientService.seed(clients, membershipsPerClient);
+        return ResponseEntity.ok(Map.of("seededClients", count, "membershipsPerClient", membershipsPerClient));
+    }
+
     @PostMapping
     public ResponseEntity<ClientResponse> create(@RequestBody(required = false) ClientRequest req) {
         if (req == null) throw new ValidationException("Request body must not be null");
-        Client client = clientService.createClient(req.fullName(), req.phone(), req.email(), req.birthDate());
+        Client client = clientService.createClient(req.fullName(), req.phone(), req.email(), req.birthDate(), req.preferredLocker());
         return ResponseEntity.created(URI.create("/api/clients/" + client.getId())).body(ClientResponse.fromDomain(client));
     }
 
@@ -49,7 +66,7 @@ public class ClientController {
     @PutMapping("/{id}")
     public ClientResponse update(@PathVariable Long id, @RequestBody(required = false) ClientRequest req) {
         if (req == null) throw new ValidationException("Request body must not be null");
-        return ClientResponse.fromDomain(clientService.updateClient(id, req.fullName(), req.phone(), req.email(), req.birthDate()));
+        return ClientResponse.fromDomain(clientService.updateClient(id, req.fullName(), req.phone(), req.email(), req.birthDate(), req.preferredLocker()));
     }
 
     @DeleteMapping("/{id}")

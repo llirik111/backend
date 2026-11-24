@@ -41,9 +41,9 @@ public class GymOperationServiceTest {
 
     @BeforeEach
     void setUp() {
-        clientRepository = new InMemoryClientRepository();
-        membershipRepository = new InMemoryMembershipRepository();
-        visitRepository = new InMemoryVisitRepository();
+        clientRepository = InMemoryClientRepository.create();
+        membershipRepository = InMemoryMembershipRepository.create();
+        visitRepository = InMemoryVisitRepository.create();
         clientService = new ClientService(clientRepository, membershipRepository, visitRepository);
         membershipService = new MembershipService(membershipRepository, visitRepository, clientService);
         gymOperationService = new GymOperationService(membershipRepository, visitRepository, clientService);

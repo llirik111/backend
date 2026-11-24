@@ -38,9 +38,9 @@ public class MembershipServiceTest {
 
     @BeforeEach
     void setUp() {
-        clientRepository = new InMemoryClientRepository();
-        membershipRepository = new InMemoryMembershipRepository();
-        visitRepository = new InMemoryVisitRepository();
+        clientRepository = InMemoryClientRepository.create();
+        membershipRepository = InMemoryMembershipRepository.create();
+        visitRepository = InMemoryVisitRepository.create();
         clientService = new ClientService(clientRepository, membershipRepository, visitRepository);
         membershipService = new MembershipService(membershipRepository, visitRepository, clientService);
         testClient = clientService.createClient("Test User", "+79991234567", "test@test.com", LocalDate.of(1990, 1, 1));

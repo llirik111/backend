@@ -13,6 +13,7 @@ import app.domain.model.VisitStatus;
 import app.domain.repository.MembershipRepository;
 import app.domain.repository.VisitRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -30,6 +31,7 @@ public class GymOperationService {
         this.clientService = clientService;
     }
 
+    @Transactional
     public Visit checkIn(Long membershipId, LocalDateTime visitTime, String preferredLocker) {
         synchronized (DomainLock.INSTANCE) {
             if (membershipId == null) throw new ValidationException("Membership id must not be null");
@@ -37,7 +39,10 @@ public class GymOperationService {
             Membership membership = membershipRepository.findById(membershipId)
                     .orElseThrow(() -> new NotFoundException("Membership not found with id: " + membershipId));
 
-            Client client = clientService.getClient(membership.getClientId());
+            Client client = membership.getClient();
+            if (client == null) {
+                client = clientService.getClient(membership.getClientId());
+            }
             if (client.getStatus() == ClientStatus.BLOCKED) {
                 throw new BusinessRuleException("Client account is blocked. Check-in denied.");
             }
@@ -45,16 +50,20 @@ public class GymOperationService {
                 throw new ConflictException("Client is already checked in and inside the gym");
             }
 
-            String assignedLocker = allocateLocker(preferredLocker);
+            String lockerToUse = (preferredLocker != null && !preferredLocker.trim().isEmpty())
+                    ? preferredLocker.trim()
+                    : client.getPreferredLocker();
+            String assignedLocker = allocateLocker(lockerToUse);
             membership.validateCheckIn(time);
             membership.applyCheckIn(time);
             membershipRepository.save(membership);
 
-            Visit visit = Visit.start(client.getId(), membership.getId(), time, assignedLocker);
+            Visit visit = Visit.start(client, membership, time, assignedLocker);
             return visitRepository.save(visit);
         }
     }
 
+    @Transactional
     public Visit checkOut(Long visitId, LocalDateTime exitTime) {
         synchronized (DomainLock.INSTANCE) {
             if (visitId == null) throw new ValidationException("Visit id must not be null");
@@ -66,6 +75,7 @@ public class GymOperationService {
         }
     }
 
+    @Transactional
     public Membership freezeMembership(Long membershipId, int days, LocalDate requestDate) {
         synchronized (DomainLock.INSTANCE) {
             if (membershipId == null) throw new ValidationException("Membership id must not be null");
@@ -80,6 +90,7 @@ public class GymOperationService {
         }
     }
 
+    @Transactional
     public Membership unfreezeMembership(Long membershipId, LocalDate requestDate) {
         synchronized (DomainLock.INSTANCE) {
             if (membershipId == null) throw new ValidationException("Membership id must not be null");
@@ -91,11 +102,13 @@ public class GymOperationService {
         }
     }
 
+    @Transactional(readOnly = true)
     public Visit getVisit(Long id) {
         if (id == null) throw new NotFoundException("Visit id must not be null");
         return visitRepository.findById(id).orElseThrow(() -> new NotFoundException("Visit not found with id: " + id));
     }
 
+    @Transactional(readOnly = true)
     public List<Visit> listVisits(Long clientId, VisitStatus status) {
         return visitRepository.findByFilter(clientId, status);
     }

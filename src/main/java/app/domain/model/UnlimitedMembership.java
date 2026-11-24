@@ -3,6 +3,8 @@ package app.domain.model;
 import app.domain.exception.BusinessRuleException;
 import app.domain.exception.ConflictException;
 import app.domain.exception.ValidationException;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -10,7 +12,22 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
+@Entity
+@DiscriminatorValue("UNLIMITED")
 public class UnlimitedMembership extends Membership {
+
+    public UnlimitedMembership() {
+    }
+
+    public UnlimitedMembership(Long id) {
+        super(id);
+    }
+
+    public UnlimitedMembership(Long id, Client client, MembershipStatus status,
+                               LocalDate startDate, LocalDate endDate, int frozenDays,
+                               LocalDate freezeStartDate, BigDecimal price, Instant createdAt) {
+        super(id, client, MembershipType.UNLIMITED, status, startDate, endDate, frozenDays, freezeStartDate, price, createdAt);
+    }
 
     public UnlimitedMembership(Long id, Long clientId, MembershipStatus status,
                                LocalDate startDate, LocalDate endDate, int frozenDays,
@@ -18,11 +35,14 @@ public class UnlimitedMembership extends Membership {
         super(id, clientId, MembershipType.UNLIMITED, status, startDate, endDate, frozenDays, freezeStartDate, price, createdAt);
     }
 
-    public static UnlimitedMembership create(Long clientId, LocalDate startDate, int durationDays, BigDecimal price) {
+    public static UnlimitedMembership create(Client client, LocalDate startDate, int durationDays, BigDecimal price) {
         if (durationDays <= 0) throw new ValidationException("Duration days must be positive");
         LocalDate start = startDate != null ? startDate : LocalDate.now();
-        LocalDate end = start.plusDays(durationDays);
-        return new UnlimitedMembership(null, clientId, MembershipStatus.ACTIVE, start, end, 0, null, price, Instant.now());
+        return new UnlimitedMembership(null, client, MembershipStatus.ACTIVE, start, start.plusDays(durationDays), 0, null, price, Instant.now());
+    }
+
+    public static UnlimitedMembership create(Long clientId, LocalDate startDate, int durationDays, BigDecimal price) {
+        return create(new Client(clientId), startDate, durationDays, price);
     }
 
     @Override
