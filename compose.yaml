@@ -9,7 +9,13 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - gym-data:/var/lib/postgresql
+      - gym-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   gym-data:
