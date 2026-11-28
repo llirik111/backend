@@ -11,12 +11,12 @@ echo ""
 echo "=== 2. Create clients (POST /api/clients) ==="
 curl -i -X POST "${BASE_URL}/api/clients" \
   -H "Content-Type: application/json" \
-  -d '{"fullName":"Ivan Ivanov","phone":"+79991112233","email":"ivan@example.com","birthDate":"1995-05-15"}'
+  -d '{"fullName":"Ivan Ivanov","phone":"+79991112233","email":"ivan@example.com","birthDate":"1995-05-15","preferredLocker":"L-115"}'
 echo ""
 
 curl -i -X POST "${BASE_URL}/api/clients" \
   -H "Content-Type: application/json" \
-  -d '{"fullName":"Maria Petrova","phone":"+79992223344","email":"maria@example.com","birthDate":"1998-08-20"}'
+  -d '{"fullName":"Maria Petrova","phone":"+79992223344","email":"maria@example.com","birthDate":"1998-08-20","preferredLocker":"L-120"}'
 echo ""
 
 curl -i -X POST "${BASE_URL}/api/clients" \
@@ -61,7 +61,7 @@ echo ""
 echo "=== 5. Update, block, unblock and delete client ==="
 curl -i -X PUT "${BASE_URL}/api/clients/1" \
   -H "Content-Type: application/json" \
-  -d '{"fullName":"Ivan Ivanov Updated","phone":"+79991112233","email":"ivan_new@example.com","birthDate":"1995-05-15"}'
+  -d '{"fullName":"Ivan Ivanov Updated","phone":"+79991112233","email":"ivan_new@example.com","birthDate":"1995-05-15","preferredLocker":"L-116"}'
 echo ""
 
 curl -i -X PUT "${BASE_URL}/api/clients/1" \
@@ -95,12 +95,7 @@ curl -i -X POST "${BASE_URL}/api/memberships" \
   -d '{"clientId":2,"type":"VISIT_BASED","startDate":"2026-10-01","durationDays":30,"totalVisits":1,"price":1200.00}'
 echo ""
 
-curl -i -X POST "${BASE_URL}/api/memberships" \
-  -H "Content-Type: application/json" \
-  -d '{"clientId":1,"type":"DAYTIME","startDate":"2026-10-01","durationDays":30,"price":3000.00}'
-echo ""
-
-echo "=== 7. Membership validation errors and atomic updates ==="
+echo "=== 7. Membership validation errors and foreign key non-existent client check ==="
 curl -i -X POST "${BASE_URL}/api/memberships" \
   -H "Content-Type: application/json" \
   -d '{"clientId":2,"type":"VISIT_BASED","startDate":"2026-10-01","durationDays":30,"price":1000.00}'
@@ -108,7 +103,7 @@ echo ""
 
 curl -i -X POST "${BASE_URL}/api/memberships" \
   -H "Content-Type: application/json" \
-  -d '{"clientId":999,"type":"UNLIMITED","startDate":"2026-10-01","durationDays":30,"price":1000.00}'
+  -d '{"clientId":999999,"type":"UNLIMITED","startDate":"2026-10-01","durationDays":30,"price":1000.00}'
 echo ""
 
 curl -i -X POST "${BASE_URL}/api/memberships" \
@@ -145,7 +140,20 @@ echo ""
 curl -i -X GET "${BASE_URL}/api/memberships/1"
 echo ""
 
-echo "=== 9. Domain operation: Freeze and Unfreeze memberships ==="
+echo "=== 9. Multi-entity transactional operations: Transfer and Rollback on error ==="
+curl -i -X POST "${BASE_URL}/api/memberships/1/transfer?targetClientId=2"
+echo ""
+
+curl -i -X GET "${BASE_URL}/api/memberships/1"
+echo ""
+
+curl -i -X POST "${BASE_URL}/api/memberships/1/transfer?targetClientId=1"
+echo ""
+
+curl -i -X GET "${BASE_URL}/api/memberships/1"
+echo ""
+
+echo "=== 10. Domain operation: Freeze and Unfreeze memberships ==="
 curl -i -X POST "${BASE_URL}/api/memberships/1/freeze" \
   -H "Content-Type: application/json" \
   -d '{"days":10,"requestDate":"2026-10-15"}'
@@ -176,7 +184,7 @@ curl -i -X POST "${BASE_URL}/api/memberships/1/unfreeze" \
   -d '{"requestDate":"2026-10-26"}'
 echo ""
 
-echo "=== 10. Domain operation: Check-in, Visits, and Locker Validation ==="
+echo "=== 11. Domain operation: Check-in, Visits, and Locker Validation ==="
 curl -i -X POST "${BASE_URL}/api/memberships/1/check-in" \
   -H "Content-Type: application/json" \
   -d '{"preferredLocker":"L-999"}'
@@ -223,12 +231,6 @@ curl -i -X POST "${BASE_URL}/api/memberships/2/check-in" \
   -d '{}'
 echo ""
 
-echo "=== 11. Daytime membership time restriction check ==="
-curl -i -X POST "${BASE_URL}/api/memberships/3/check-in" \
-  -H "Content-Type: application/json" \
-  -d '{"visitTime":"2026-10-20T21:00:00"}'
-echo ""
-
 echo "=== 12. Visits listing and Check-out ==="
 curl -i -X GET "${BASE_URL}/api/visits?status=IN_PROGRESS"
 echo ""
@@ -255,13 +257,14 @@ curl -i -X POST "${BASE_URL}/api/memberships/1/check-in" \
   -d '{}'
 echo ""
 
-curl -i -X DELETE "${BASE_URL}/api/memberships/3"
+echo "=== 14. Bulk seeding and N+1 prevention test ==="
+curl -i -X POST "${BASE_URL}/api/clients/seed?clients=50&membershipsPerClient=2"
 echo ""
 
-curl -i -X GET "${BASE_URL}/api/memberships/3"
+curl -i -X GET "${BASE_URL}/api/clients/with-memberships"
 echo ""
 
-echo "=== 14. HTTP error handling and resilience ==="
+echo "=== 15. HTTP error handling and resilience ==="
 curl -i -X PUT "${BASE_URL}/ping"
 echo ""
 

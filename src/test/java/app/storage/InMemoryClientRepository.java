@@ -4,6 +4,8 @@ import app.domain.model.Client;
 import app.domain.model.ClientStatus;
 import app.domain.repository.ClientRepository;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -12,11 +14,10 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class InMemoryClientRepository implements ClientRepository {
+public class InMemoryClientRepository {
     private final Map<Long, Client> clients = new ConcurrentHashMap<>();
     private final AtomicLong idSequence = new AtomicLong(1);
 
-    @Override
     public Client save(Client client) {
         if (client.getId() == null) {
             client.setId(idSequence.getAndIncrement());
@@ -25,29 +26,24 @@ public class InMemoryClientRepository implements ClientRepository {
         return client;
     }
 
-    @Override
     public Optional<Client> findById(Long id) {
         return Optional.ofNullable(clients.get(id));
     }
 
-    @Override
     public Optional<Client> findByPhone(String phone) {
         if (phone == null) return Optional.empty();
         return clients.values().stream().filter(c -> phone.equalsIgnoreCase(c.getPhone())).findFirst();
     }
 
-    @Override
     public Optional<Client> findByEmail(String email) {
         if (email == null) return Optional.empty();
         return clients.values().stream().filter(c -> email.equalsIgnoreCase(c.getEmail())).findFirst();
     }
 
-    @Override
     public List<Client> findAll() {
         return new ArrayList<>(clients.values());
     }
 
-    @Override
     public List<Client> findByFilter(String query, ClientStatus status) {
         String queryLower = query != null ? query.trim().toLowerCase(Locale.ROOT) : null;
         return clients.values().stream()
@@ -64,13 +60,31 @@ public class InMemoryClientRepository implements ClientRepository {
                 .toList();
     }
 
-    @Override
-    public boolean deleteById(Long id) {
-        return clients.remove(id) != null;
+    public List<Client> findAllWithMemberships() {
+        return new ArrayList<>(clients.values());
     }
 
-    @Override
+    public void deleteById(Long id) {
+        clients.remove(id);
+    }
+
     public boolean existsById(Long id) {
         return clients.containsKey(id);
+    }
+
+    public static ClientRepository create() {
+        InMemoryClientRepository target = new InMemoryClientRepository();
+        return (ClientRepository) Proxy.newProxyInstance(
+                ClientRepository.class.getClassLoader(),
+                new Class<?>[]{ClientRepository.class},
+                (proxy, method, args) -> {
+                    for (Method m : target.getClass().getMethods()) {
+                        if (m.getName().equals(method.getName()) && m.getParameterCount() == method.getParameterCount()) {
+                            return m.invoke(target, args);
+                        }
+                    }
+                    return null;
+                }
+        );
     }
 }
